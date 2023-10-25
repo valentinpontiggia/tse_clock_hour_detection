@@ -1,6 +1,5 @@
 import tkinter as tk
 from PIL import ImageTk, Image, ImageDraw
-import pygame
 import camera
 
 
