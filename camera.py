@@ -43,7 +43,7 @@ class CameraApp:
         img.save("reponse.jpg")
         
     def analyse(self):
-        img = cv2.imread('reponse.jpg')
+        img = cv2.imread('apprentissage/horloges/clock44.png')
         img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         
         img_blurred = cv2.GaussianBlur(img_gray,(5,5),0)
@@ -53,6 +53,6 @@ class CameraApp:
         dilatation = cv2.dilate(edges,kernel,iterations = 1)
         erosion = cv2.erode(dilatation,kernel,iterations = 1)
         
-        mask = img_gray>200
-        erosion[mask]=0
-        cv2.imwrite("analyse.png",erosion)
+        #mask = img_gray>200
+        #erosion[mask]=0
+        cv2.imwrite("apprentissage/analyses/clock44.png",erosion)
