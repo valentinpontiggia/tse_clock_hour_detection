@@ -15,40 +15,36 @@ def startCamera():
 #################### Programme principal : fenêtre d'accueil #######################
 mainwindow=tk.Tk()
 mainwindow.title("Projet Vision")
-mainwindow.geometry("800x600")
+mainwindow.geometry("600x600")
 
 # Taille de la fenêtre
-start_canvas = tk.Canvas(mainwindow,width=800,height=600)
+start_canvas = tk.Canvas(mainwindow,width=600,height=600)
 start_canvas.pack(fill="both", expand=True)
 
 # Image de fond
-img = ImageTk.PhotoImage(Image.open("bg.png"))
-start_canvas.create_image(10,50,image=img,anchor="nw")
+img = ImageTk.PhotoImage(Image.open("bg.jpg"))
+start_canvas.create_image(0,0,image=img,anchor="nw")
 
-# Titre et définiton du scénario
-titre = start_canvas.create_text(400, 50, text="Projet Vision", font=("Verdana",20, "bold"),fill="darkblue")
+# Titre et textes
+titre = start_canvas.create_text(170, 250, text="Projet Vision", font=("Verdana",20, "bold"),fill="white")
 
-canvas_rulestext = start_canvas.create_text(640,340, text="Explications projet",font=("Verdana",12),fill="black")
+canvas_rulestext = start_canvas.create_text(160,90, text="Plus de problèmes pour lire l'heure ! \nGrâce à notre incroyable Clock \nAnalyser, vous serez toujours à \nl'heure pour votre rendez-vous !",font=("Verdana",11),fill="lightgray")
 
+canvas_text = start_canvas.create_text(100,400, text="Projet Vision FISE3 2023\n\nAlban Lemiere\nEnzo Lievoux\nJulien Henry\nValentin Pontiggia\n\nTélécom Saint-Etienne",font=("Verdana",10),fill="lightgray")
 
 ###################### Style des boutons ######################
 button_style = {
-    "fg": "#902038",     # Couleur du texte
+    "fg": "white",     # Couleur du texte
     "font": ("Verdana", 14, "bold"),   # Police en gras, taille 14
-    "bd": 3,           # Largeur de la bordure de 3 pixels
-    "relief": "ridge", # Type de bordure en relief
-    "activebackground": "#2B91FF",    # Couleur de fond lors du survol de la souris
-    "activeforeground": "white",      # Couleur du texte lors du survol de la souris
-    "highlightcolor": "#F4FA58",      # Couleur de la bordure lors du survol de la souris
-    "highlightbackground" : "darkgrey",
-    "highlightthickness": 2,          # Epaisseur de la bordure lors du survol de la souris
-    "cursor": "hand2"    # Curseur de souris en forme de main pour indiquer l'interactivité
+    "bg": "#A83219",
+    "bd": 0,
+    "cursor" : "hand2",
 }
 
 
 ###################### Création du bouton Start ######################
 start_button = tk.Button(mainwindow, text="START", **button_style, command=startCamera)
-start_button_window = start_canvas.create_window(540,140,anchor="nw", window=start_button)
+start_button_window = start_canvas.create_window(327,250,anchor="nw", window=start_button)
 
 ###################### Création du menu ######################
 def createMenu():
