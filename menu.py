@@ -8,7 +8,7 @@ import camera
 def startCamera():
     camWindow = tk.Toplevel(mainwindow)
     camWindow.title("Caméra")
-    camWindow.geometry("450x600")
+    camWindow.geometry("800x600")
     cam = camera.CameraApp(camWindow,mainwindow)
 
 ####################################################################################    
