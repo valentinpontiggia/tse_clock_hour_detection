@@ -8,13 +8,18 @@ class CameraApp:
         self.master = master
         self.master2 = master2
         self.camera = cv2.VideoCapture(0)
+        self.interval = 10
         self.isButtonVisible = False
+        self.analyse_continuously = False
+        self.analyse_interval = 500 # Interval de 1 sec
 
         self.canvas = tk.Canvas(self.master, width=640, height=480)
         self.canvas.pack()
 
         self.btn_capture = tk.Button(self.master, text="Capture", command=self.capture)
         self.btn_capture.pack()
+        self.btn_continuous_analysis = tk.Button(self.master, text="Analyse Continue", command=self.toggle_continuous_analysis)
+        self.btn_continuous_analysis.pack()
         
         self.update_stream()
 
@@ -28,8 +33,26 @@ class CameraApp:
         imgtk = ImageTk.PhotoImage(image=img)
         self.canvas.create_image(0, 0, anchor="nw", image=imgtk)
         self.canvas.imgtk = imgtk
-        self.master.after(10, self.update_stream)
 
+        if self.analyse_continuously:
+            self.analyse()
+        
+        self.master.after(self.interval,self.update_stream)
+
+    def toggle_continuous_analysis(self):
+        # Méthode pour activer/désactiver l'analyse continue
+        if self.analyse_continuously:
+            self.interval = 10
+        else :
+            self.interval = self.analyse_interval
+        self.analyse_continuously = not self.analyse_continuously
+
+    def start_continuous_analysis(self):
+        self.analyse_continuously = True
+
+    def stop_continuous_analysis(self):
+        self.analyse_continuously = False
+    
 # Cette méthode est appelée lorsqu'on clique sur le bouton Capture. Elle capture une 
 # image à partir du flux de la caméra, la convertit de BGR à RGB, puis sauvegarde cette 
 # image dans un fichier nommé "reponse.jpg".
@@ -198,5 +221,5 @@ class CameraApp:
         cv2.imshow('arms', (255*arms).clip(0,255).astype(np.uint8))
         cv2.imshow('arms_thin', arms_thin)
         cv2.imshow('result', result)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        cv2.waitKey(1)
+        # cv2.destroyAllWindows()
