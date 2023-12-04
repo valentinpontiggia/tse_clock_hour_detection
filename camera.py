@@ -59,6 +59,20 @@ class CameraApp:
     #    #erosion[mask]=0
     #    cv2.imwrite("apprentissage/analyses/clock44.png",erosion)
     
+    def findCenter(self, img_thresh):
+        edges = cv2.Canny(img_thresh, 50, 150)
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # Filtrage des contours basé sur la superficie
+        seuil = 50
+        filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > seuil]
+        M = cv2.moments(filtered_contours[0])
+        center_x = int(M['m10'] / M['m00'])
+        center_y = int(M['m01'] / M['m00'])
+        center = []
+        center.append(center_x)
+        center.append(center_y)
+        return center
+
         
     def analyse(self):
         # Read image
@@ -73,6 +87,13 @@ class CameraApp:
 
         # invert so shapes are white on black background
         thresh = 255 - thresh
+
+        center = self.findCenter(thresh)
+        center_img = img.copy()
+        cv2.circle(center_img, (center[0], center[1]), 5, (0, 255, 0), -1)
+        cv2.imwrite('apprentissage/clock_center.jpg', center_img)
+
+        cv2.imshow('Center', center_img)
 
         # get contours and save area
         cntrs_info = []
@@ -113,7 +134,7 @@ class CameraApp:
         #    y2 = line[3]
         #    cv2.line(result, (x1,y1), (x2,y2), (0,0,255), 2)
         
-        methodKey = 2
+        methodKey = 1
         
          # Prepare some lists to store every coordinate of the detected lines:
         X1 = []
@@ -163,7 +184,8 @@ class CameraApp:
             ret, label, center = cv2.kmeans(floatPoints, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
         
         # Draw the lines:
-        cv2.line(result, (x1,y1), (x2,y2), (0,0,255), 2)
+        for i in range(4):
+            cv2.line(result, (X1[i],Y1[i]), (X2[i],Y2[i]), (0,0,255), 2)
 
 
         # save results
