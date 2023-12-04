@@ -25,7 +25,7 @@ class CameraApp:
         self.btn_capture = tk.Button(self.master, text="Capture", command=self.capture)
         self.btn_capture.grid(row=1, column=0, columnspan=1, pady=5, sticky='n')
         self.btn_continuous_analysis = tk.Button(self.master, text="Analyse Continue", command=self.toggle_continuous_analysis)
-        self.btn_continuous_analysis.pack()
+        self.btn_continuous_analysis.grid(row=1, column=0, columnspan=1, pady=45, sticky='n')
         
         self.update_stream()
 
@@ -65,7 +65,7 @@ class CameraApp:
     def capture(self):
         if self.isButtonVisible == False :
             self.btn_classify = tk.Button(self.master, text="Analyser", command=self.analyse)
-            self.btn_classify.grid(row=1, column=0, columnspan=1, pady=45, sticky='n')
+            self.btn_classify.grid(row=1, column=0, columnspan=1, pady=80, sticky='n')
             self.isButtonVisible = True    
         _, frame = self.camera.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
