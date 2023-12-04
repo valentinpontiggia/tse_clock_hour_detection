@@ -9,7 +9,10 @@ class CameraApp:
         self.master = master
         self.master2 = master2
         self.camera = cv2.VideoCapture(0)
+        self.interval = 10
         self.isButtonVisible = False
+        self.analyse_continuously = False
+        self.analyse_interval = 500 # Interval de 1 sec
     
         self.canvas = tk.Canvas(self.master, width=500, height=480)
         self.canvas.grid(row=0, column=0, sticky='nw')
@@ -21,6 +24,8 @@ class CameraApp:
 
         self.btn_capture = tk.Button(self.master, text="Capture", command=self.capture)
         self.btn_capture.grid(row=1, column=0, columnspan=1, pady=5, sticky='n')
+        self.btn_continuous_analysis = tk.Button(self.master, text="Analyse Continue", command=self.toggle_continuous_analysis)
+        self.btn_continuous_analysis.pack()
         
         self.update_stream()
 
@@ -34,8 +39,26 @@ class CameraApp:
         imgtk = ImageTk.PhotoImage(image=img)
         self.canvas.create_image(0, 0, anchor="nw", image=imgtk)
         self.canvas.imgtk = imgtk
-        self.master.after(10, self.update_stream)
 
+        if self.analyse_continuously:
+            self.analyse()
+        
+        self.master.after(self.interval,self.update_stream)
+
+    def toggle_continuous_analysis(self):
+        # Méthode pour activer/désactiver l'analyse continue
+        if self.analyse_continuously:
+            self.interval = 10
+        else :
+            self.interval = self.analyse_interval
+        self.analyse_continuously = not self.analyse_continuously
+
+    def start_continuous_analysis(self):
+        self.analyse_continuously = True
+
+    def stop_continuous_analysis(self):
+        self.analyse_continuously = False
+    
 # Cette méthode est appelée lorsqu'on clique sur le bouton Capture. Elle capture une 
 # image à partir du flux de la caméra, la convertit de BGR à RGB, puis sauvegarde cette 
 # image dans un fichier nommé "reponse.jpg".
