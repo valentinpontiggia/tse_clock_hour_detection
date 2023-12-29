@@ -72,24 +72,10 @@ class CameraApp:
         img = Image.fromarray(frame)
         img.save("reponse.jpg")
     
-       
-    #def analyse(self):
-    #    img = cv2.imread('apprentissage/horloges/clock44.png')
-    #   img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    #  
-    #    img_blurred = cv2.GaussianBlur(img_gray,(5,5),0)
-    #    
-    #    edges = cv2.Canny(img_blurred, 50, 150)
-    #    kernel = np.ones((5,5), np.uint8)
-    #    dilatation = cv2.dilate(edges,kernel,iterations = 1)
-    #    erosion = cv2.erode(dilatation,kernel,iterations = 1)
-    #    
-    #    #mask = img_gray>200
-    #    #erosion[mask]=0
-    #    cv2.imwrite("apprentissage/analyses/clock44.png",erosion)
-    
     def findCenter(self, img_thresh):
         edges = cv2.Canny(img_thresh, 30, 150)
+        # Le contour de l'horloge n'étant pas suffisamment bien détecté
+        # on utilise des opérations morphologiques pour le reconstituer
         kernel = np.ones((5, 5), np.uint8)
         edges = cv2.dilate(edges, kernel, iterations=1)
         edges = cv2.erode(edges, kernel, iterations=1)
@@ -120,6 +106,7 @@ class CameraApp:
         return distance < distance_threshold
     
     def calculate_angle(self, center, point):
+        # Calcul de l'angle entre les pointes de l'aiguille de le centre
         x, y = point[0] - center[0], point[1] - center[1]
         angle_rad = math.atan2(x, -y)
         angle_deg = math.degrees(angle_rad)
@@ -134,7 +121,7 @@ class CameraApp:
             hour += 12
         elif hour > 12:
             hour -= 12
-
+        # On arrondi l'heure à l'entier inférieur
         return int(hour)
     
     def angle_to_minute(self, angle):
@@ -148,17 +135,15 @@ class CameraApp:
 
         
     def analyse(self):
-        # Read image
+        # Lecture de l'image
         img = cv2.imread('apprentissage/horloges/clock44.png')
         hh, ww = img.shape[:2]
-
-        # convert to gray
         gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
-        # threshold
+        # Seuillage en noir et blanc
         thresh = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)[1]
 
-        # invert so shapes are white on black background
+        # Formes blanches sur fond noir
         thresh = 255 - thresh
         center = self.findCenter(thresh)
         print("Centre : ", center)
@@ -168,7 +153,7 @@ class CameraApp:
 
         cv2.imshow('Center', center_img)
 
-        # get contours and save area
+        # Détection de contours
         cntrs_info = []
         contours = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         contours = contours[0] if len(contours) == 2 else contours[1]
@@ -178,65 +163,52 @@ class CameraApp:
             cntrs_info.append((index,area))
             index = index + 1
 
-        # sort contours by area
+        # On trie les contours par superficie
         def takeSecond(elem):
             return elem[1]
         cntrs_info.sort(key=takeSecond, reverse=True)
 
-        # get third largest contour
+        # On prend le 3e plus grand
         arms = np.zeros_like(thresh)
         index_third = cntrs_info[2][0]
         cv2.drawContours(arms,[contours[index_third]],0,(1),-1)
 
-        #arms=cv2.ximgproc.thinning(arms)
+        # Squelettisation
         arms_thin = skeletonize(arms)
         arms_thin = (255*arms_thin).clip(0,255).astype(np.uint8)
 
         # Création image noire pour y poser les lignes dessus
         blank = np.zeros([hh,ww])
 
-        # get hough lines and draw on copy of input
-        result = img.copy()
+        # On garde les lignes du squelette
         lineThresh = 15
         minLineLength = 20
         maxLineGap = 100
-        max
         lines = cv2.HoughLinesP(arms_thin, 1, np.pi/180, lineThresh, None, minLineLength, maxLineGap)
-
-
-        #for [line] in lines:
-        #    x1 = line[0]
-        #    y1 = line[1]
-        #    x2 = line[2]
-        #    y2 = line[3]
-        #    cv2.line(result, (x1,y1), (x2,y2), (0,0,255), 2)
         
         methodKey = 1
         
-         # Prepare some lists to store every coordinate of the detected lines:
+         # Listes contenant les coordonnées des points aux extrémités des lignes
         X1 = []
         X2 = []
         Y1 = []
         Y2 = []
         distance_threshold = 40
         if methodKey ==1:
-            # Store and draw the lines:
             for [currentLine] in lines:
-                print("test")
                 x1 = currentLine[0]
                 y1 = currentLine[1]
                 x2 = currentLine[2]
                 y2 = currentLine[3]
                 
-                
+                # On garde uniquement les lignes qui ont une de leurs extrimités proche
+                # du centre de l'horloge (lignes qui correspondent aux aiguilles)
                 if (self.is_point_near_center((x1, y1), center, distance_threshold) or
                     self.is_point_near_center((x2, y2), center, distance_threshold)):
-                    # First point:
                     
                     X1.append(x1)
                     Y1.append(y1)
 
-                    # Second point:
                     X2.append(x2)
                     Y2.append(y2)
         
@@ -252,20 +224,16 @@ class CameraApp:
             X2dash = X2.reshape(-1,1)
             Y2dash = Y2.reshape(-1,1)
 
-            # Stack the data
             Z = np.hstack((X1dash, Y1dash, X2dash, Y2dash))
             print(Z)
 
-            # K-means operates on 32-bit float data:
             floatPoints = np.float32(Z)
 
-            # Set the convergence criteria and call K-means:
             criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-            # Set the desired number of clusters
             K = 2
             ret, label, center = cv2.kmeans(floatPoints, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
         
-        # Draw the lines:
+        # On dessine les lignes
         for i in range(len(X1)):
             print(f"Len x1 {len(X1)}")
             cv2.line(blank, (X1[i],Y1[i]), (X2[i],Y2[i]), (255,255,255), 2)
@@ -279,6 +247,9 @@ class CameraApp:
                 cv2.circle(blank,(point_on_line_2),8,(255, 0, 0))
                 angle_minutes = self.calculate_angle(center, point_on_line_2)
                 length_2 = np.sqrt((point_on_line_2[0]-center[0])**2 + (point_on_line_2[1]-center[0])**2)
+        
+        # On prend l'heure de la plus courte aiguille pour l'heure et la plus
+        # et la plus longue pour les minutes
         if length_1 > length_2:
             angle_minutes = self.calculate_angle(center, point_on_line)
             angle_hours = self.calculate_angle(center, point_on_line_2)
@@ -290,16 +261,14 @@ class CameraApp:
         if minutes<10 :
             minutes = "0"+str(minutes)
         hour_detected_text = str(heure)+" : "+ str(minutes)
+        # Mise à jour du texte de l'heure
         self.text_canva.itemconfig(self.heureDetect, text=hour_detected_text)
 
-        # save results
+        # Sauvegarde des résultats
         cv2.imwrite('apprentissage/clock_thresh.jpg', thresh)
         cv2.imwrite('apprentissage/clock_arms.jpg', (255*arms).clip(0,255).astype(np.uint8))
         cv2.imwrite('apprentissage/clock_arms_thin.jpg', arms_thin)
         cv2.imwrite('apprentissage/clock_lines.jpg', blank)
 
-        #cv2.imshow('thresh', thresh)
-        #cv2.imshow('arms', (255*arms).clip(0,255).astype(np.uint8))
-        #cv2.imshow('arms_thin', arms_thin)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
