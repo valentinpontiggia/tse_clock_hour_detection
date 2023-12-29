@@ -19,8 +19,8 @@ class CameraApp:
 
         self.text_canva = tk.Canvas(self.master, width=280, height=480)
         self.text_canva.grid(row=0, column=1, sticky='ne')
-        self.heureDetect = self.text_canva.create_text(150,100,text="Heure détectée :", font=("Imprint MT Shadow",14, "bold"))
-        self.heureDetect = self.text_canva.create_text(150,150,text="12 : 00", font=("Imprint MT Shadow",18, "bold"), )
+        self.heureText = self.text_canva.create_text(150,100,text="Heure détectée :", font=("Imprint MT Shadow",14, "bold"))
+        self.heureDetect = self.text_canva.create_text(150,150,text="12 : 00", font=("Imprint MT Shadow",18, "bold"))
 
         self.btn_capture = tk.Button(self.master, text="Capture", command=self.capture)
         self.btn_capture.grid(row=1, column=0, columnspan=1, pady=5, sticky='n')
@@ -92,8 +92,17 @@ class CameraApp:
         edges = cv2.Canny(img_thresh, 50, 150)
         contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         # Filtrage des contours basé sur la superficie
-        seuil = 50
+        seuil = 10000
         filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > seuil]
+        
+        img_with_contours = cv2.cvtColor(img_thresh, cv2.COLOR_GRAY2BGR)
+        cv2.drawContours(img_with_contours, filtered_contours, -1, (0, 255, 0), 2)
+
+        # Affichage de l'image avec les contours
+        cv2.imshow('Contours', img_with_contours)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        
         M = cv2.moments(filtered_contours[0])
         center_x = int(M['m10'] / M['m00'])
         center_y = int(M['m01'] / M['m00'])
@@ -109,7 +118,7 @@ class CameraApp:
     
     def calculate_angle(self, center, point):
         x, y = point[0] - center[0], point[1] - center[1]
-        angle_rad = math.atan2(y, x)
+        angle_rad = math.atan2(x, -y)
         angle_deg = math.degrees(angle_rad)
         return angle_deg
     
@@ -123,12 +132,21 @@ class CameraApp:
         elif hour > 12:
             hour -= 12
 
-        return hour
+        return round(hour)
+    
+    def angle_to_minute(self, angle):
+    # Convertir l'angle en heures (360 degrés correspondent à 60 minutes)
+        minute = round(angle * 60 / 360)
+        if minute < 0:
+            minute += 60
+        elif minute > 60:
+            minute -= 60
+        return minute
 
         
     def analyse(self):
         # Read image
-        img = cv2.imread('apprentissage/horloges/clock12.png')
+        img = cv2.imread('apprentissage/horloges/clock14.png')
         hh, ww = img.shape[:2]
 
         # convert to gray
@@ -139,8 +157,8 @@ class CameraApp:
 
         # invert so shapes are white on black background
         thresh = 255 - thresh
-
         center = self.findCenter(thresh)
+        print("Centre : ", center)
         center_img = img.copy()
         cv2.circle(center_img, (center[0], center[1]), 5, (0, 255, 0), -1)
         cv2.imwrite('apprentissage/clock_center.jpg', center_img)
@@ -197,10 +215,11 @@ class CameraApp:
         X2 = []
         Y1 = []
         Y2 = []
-        distance_threshold = 20
+        distance_threshold = 40
         if methodKey ==1:
             # Store and draw the lines:
             for [currentLine] in lines:
+                print("test")
                 x1 = currentLine[0]
                 y1 = currentLine[1]
                 x2 = currentLine[2]
@@ -246,17 +265,28 @@ class CameraApp:
         # Draw the lines:
         for i in range(len(X1)):
             cv2.line(blank, (X1[i],Y1[i]), (X2[i],Y2[i]), (255,255,255), 2)
-            point_on_line = (X1[i], Y1[i])
-            point_on_line_2 = (X2[i], Y2[i])
-            angle = self.calculate_angle(center, point_on_line)
-            angle_2 = self.calculate_angle(center, point_on_line_2)
-            heure = self.angle_to_hour(angle)
-            minutes = self.angle_to_hour(angle_2)
-            print(f"Angle par rapport au centre pour {i} : {angle} degrés")
-            print(f"Angle par rapport au centre pour {i} : {angle_2} degrés")
-            print(f"Heure {i} : {heure}")
-            print(f"Minutes {i} : {minutes}")
+            if not (self.is_point_near_center((X1[i], Y1[i]),center,distance_threshold)):
+                point_on_line = (X1[i], Y1[i])
+                cv2.circle(blank,(point_on_line),8,(255, 0, 0))
+                angle_hours = self.calculate_angle(center, point_on_line)
+                length_1 = np.sqrt((point_on_line[0]-center[0])**2 + (point_on_line[1]-center[0])**2)
+            if not (self.is_point_near_center((X2[i], Y2[i]),center,distance_threshold)):
+                point_on_line_2 = (X2[i], Y2[i])
+                cv2.circle(blank,(point_on_line_2),8,(255, 0, 0))
+                angle_minutes = self.calculate_angle(center, point_on_line_2)
+                length_2 = np.sqrt((point_on_line_2[0]-center[0])**2 + (point_on_line_2[1]-center[0])**2)
+        if length_1 > length_2:
+            angle_minutes = self.calculate_angle(center, point_on_line)
+            angle_hours = self.calculate_angle(center, point_on_line_2)
 
+        heure = self.angle_to_hour(angle_hours)
+        minutes = self.angle_to_minute(angle_minutes)
+        if heure<10 :
+            heure = "0"+str(heure)
+        if minutes<10 :
+            minutes = "0"+str(minutes)
+        hour_detected_text = str(heure)+" : "+ str(minutes)
+        self.text_canva.itemconfig(self.heureDetect, text=hour_detected_text)
 
         # save results
         cv2.imwrite('apprentissage/clock_thresh.jpg', thresh)
@@ -267,6 +297,5 @@ class CameraApp:
         #cv2.imshow('thresh', thresh)
         #cv2.imshow('arms', (255*arms).clip(0,255).astype(np.uint8))
         #cv2.imshow('arms_thin', arms_thin)
-        cv2.imshow('result', blank)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
