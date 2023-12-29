@@ -89,7 +89,10 @@ class CameraApp:
     #    cv2.imwrite("apprentissage/analyses/clock44.png",erosion)
     
     def findCenter(self, img_thresh):
-        edges = cv2.Canny(img_thresh, 50, 150)
+        edges = cv2.Canny(img_thresh, 30, 150)
+        kernel = np.ones((5, 5), np.uint8)
+        edges = cv2.dilate(edges, kernel, iterations=1)
+        edges = cv2.erode(edges, kernel, iterations=1)
         contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         # Filtrage des contours basé sur la superficie
         seuil = 10000
@@ -132,7 +135,7 @@ class CameraApp:
         elif hour > 12:
             hour -= 12
 
-        return round(hour)
+        return int(hour)
     
     def angle_to_minute(self, angle):
     # Convertir l'angle en heures (360 degrés correspondent à 60 minutes)
@@ -146,7 +149,7 @@ class CameraApp:
         
     def analyse(self):
         # Read image
-        img = cv2.imread('apprentissage/horloges/clock14.png')
+        img = cv2.imread('apprentissage/horloges/clock44.png')
         hh, ww = img.shape[:2]
 
         # convert to gray
@@ -264,6 +267,7 @@ class CameraApp:
         
         # Draw the lines:
         for i in range(len(X1)):
+            print(f"Len x1 {len(X1)}")
             cv2.line(blank, (X1[i],Y1[i]), (X2[i],Y2[i]), (255,255,255), 2)
             if not (self.is_point_near_center((X1[i], Y1[i]),center,distance_threshold)):
                 point_on_line = (X1[i], Y1[i])
